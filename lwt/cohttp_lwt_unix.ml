@@ -69,9 +69,9 @@ module Server = struct
          let body = Printexc.to_string exn in
          respond_error ~status:`Internal_server_error ~body ()
 
-  let create ?(mode=`TCP) ?stop ?timeout ~address ~port spec =
-    lwt sockaddr = Lwt_unix_net.build_sockaddr address (string_of_int port) in
-    Lwt_unix_conduit.serve ~mode ~sockaddr ?stop ?timeout (callback spec)
+  let create ?stop ?timeout ~port ?(mode=`TCP (`Port port)) spec =
+    Lwt_unix_conduit.Server.serve ?stop ?timeout mode
+      (fun conn ic oc -> (callback spec) conn ic oc)
 end
 
 module type S = sig
@@ -88,8 +88,5 @@ module type S = sig
     fname:string -> unit ->
     (Cohttp.Response.t * Cohttp_lwt_body.t) Lwt.t
 
-  val create : ?mode:Lwt_unix_conduit.server_mode ->
-    ?stop:(unit Lwt.t) -> ?timeout:int ->
-    address:string -> port:int -> t -> unit Lwt.t
-
+  val create : ?stop:(unit Lwt.t) -> ?timeout:int -> port:int -> ?mode:Conduit.Server.t -> t -> unit Lwt.t
 end
