@@ -22,11 +22,46 @@ open Cohttp_lwt_unix
 let src = Logs.Src.create "cohttp.lwt.curl" ~doc:"Cohttp Lwt curl implementation"
 module Log = (val Logs.src_log src : Logs.LOG)
 
-let client uri ofile meth' =
+let reporter ppf =
+  let report src level ~over k msgf =
+    let k _ =
+      over () ;
+      k () in
+    let with_metadata header _tags k ppf fmt =
+      Format.kfprintf k ppf
+        ("%a[%a]: " ^^ fmt ^^ "\n%!")
+        Logs_fmt.pp_header (level, header)
+        Fmt.(styled `Magenta string)
+        (Logs.Src.name src) in
+    msgf @@ fun ?header ?tags fmt -> with_metadata header tags k ppf fmt in
+  { Logs.report }
+
+let () = Mirage_crypto_rng_unix.initialize ()
+
+let client uri ofile meth' ssl =
   Log.debug (fun d -> d "Client with URI %s" (Uri.to_string uri));
   let meth = Cohttp.Code.method_of_string meth' in
   Log.debug (fun d -> d "Client %s issued" meth');
-  Client.call meth uri >>= fun (resp, body) ->
+  let ctx = match Uri.scheme uri, ssl with
+    | Some "https", true ->
+      let () = Ssl.init () in
+      let port = Option.value ~default:443 (Uri.port uri) in
+      let context = Ssl.create_context Ssl.TLSv1_2 Ssl.Client_context in
+      let verify ctx flow =
+          let socket = Conduit_lwt.TCP.Protocol.file_descr flow in
+          let lwt_ssl_socket = Lwt_ssl.embed_uninitialized_socket socket ctx in
+          let ssl_socket = Lwt_ssl.ssl_socket_of_uninitialized_socket lwt_ssl_socket in
+          ( match Uri.host uri with
+          | Some host ->
+            Ssl.set_hostflags ssl_socket [Ssl.No_wildcards] ;
+            Ssl.set_host ssl_socket host ;
+            Lwt_ssl.ssl_perform_handshake lwt_ssl_socket >|= fun v -> Ok v
+          | _ -> Lwt_ssl.ssl_connect socket ctx >|= fun v -> Ok v) in
+      Conduit_lwt.add ~priority:0
+        Conduit_lwt_ssl.TCP.protocol
+        (Conduit_lwt_ssl.TCP.resolve ~verify ~port ~context) Conduit.empty
+    | _ -> Conduit.empty in
+  Client.call ~ctx meth uri >>= fun (resp, body) ->
   let status = Response.status resp in
   Log.debug (fun d ->
     d "Client %s returned: %s" meth' (Code.string_of_status status)
@@ -46,17 +81,19 @@ let client uri ofile meth' =
     | None -> output_body Lwt_io.stdout
     | Some fname -> Lwt_io.with_file ~mode:Lwt_io.output fname output_body
 
-let run_client verbose ofile uri meth =
+let run_client verbose ofile uri meth ssl =
   Lwt_main.run (
     (if verbose
     then (
       (* activate debug sets the reporter *)
       Cohttp_lwt_unix.Debug.activate_debug ();
+      Logs.set_reporter (reporter Fmt.stderr) ;
+      Logs.set_level ~all:true (Some Logs.Debug) ;
       Log.debug (fun d -> d ">>> Debug active");
       return ())
     else return ())
     >>= fun () ->
-    client uri ofile meth
+    client uri ofile meth ssl
   )
 
 open Cmdliner
@@ -70,6 +107,10 @@ let uri =
   in
   Arg.(required & pos 0 (some loc) None & info [] ~docv:"URI"
    ~doc:"string of the remote address (e.g. https://google.com)")
+
+let ssl =
+  let doc = "With SSL" in
+  Arg.(value & flag & info [ "with-ssl" ] ~doc)
 
 let meth =
   let doc = "Set http method" in
@@ -96,7 +137,7 @@ let cmd =
     `S "SEE ALSO";
     `P "$(b,curl)(1), $(b,wget)(1)" ]
   in
-  Term.(pure run_client $ verb $ ofile $ uri $ meth),
+  Term.(pure run_client $ verb $ ofile $ uri $ meth $ ssl),
   Term.info "cohttp-curl" ~version:Cohttp.Conf.version ~doc ~man
 
 let () =
