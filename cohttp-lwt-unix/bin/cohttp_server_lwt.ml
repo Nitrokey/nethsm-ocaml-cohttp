@@ -153,9 +153,9 @@ let start_server docroot port host index tls =
     ; capacity= 40; } in
   match tls_config with
   | Some tls_config ->
-    Server.create (tcp_config, tls_config) Conduit_lwt_tls.TCP.protocol Conduit_lwt_tls.TCP.service config
+    Server.create (tcp_config, tls_config) Conduit_lwt_tls.TCP.service config
   | None ->
-    Server.create tcp_config Conduit_lwt.TCP.protocol Conduit_lwt.TCP.service config
+    Server.create tcp_config Conduit_lwt.TCP.service config
 
 let lwt_start_server docroot port host index verbose tls =
   if verbose <> None then begin

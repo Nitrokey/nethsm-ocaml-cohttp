@@ -21,7 +21,7 @@ open Lwt.Infix
 
 module IO = Cohttp_lwt_unix_nossl.IO
 
-type ctx = (Conduit.resolvers[@sexp.opaque]) [@@deriving sexp]
+type ctx = (Conduit_lwt.resolvers[@sexp.opaque]) [@@deriving sexp]
 
 let () = Ssl.init ()
 
@@ -61,7 +61,7 @@ let connect_uri ~ctx uri =
       Conduit_lwt.add Conduit_lwt.TCP.protocol (Conduit_lwt.TCP.resolve ~port) ctx
     | _ -> ctx in
   Conduit_lwt.resolve ctx edn >>= function
-  | Ok (Conduit_lwt_ssl.TCP.T (Value socket) as flow) ->
+  | Ok (Conduit_lwt_ssl.TCP.T socket as flow) ->
     let ic = Lwt_ssl.in_channel_of_descr socket in
     let oc = Lwt_ssl.out_channel_of_descr socket in
     Lwt.return (flow, ic, oc)

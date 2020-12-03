@@ -33,7 +33,7 @@ let temp_server ?port spec callback =
     | Some p -> p in
   let uri = Uri.of_string ("http://localhost:" ^ (Int.to_string port)) in
   let stop, server = Server.create_expert ~on_handler_error:`Raise
-    ~protocol:Conduit_async.TCP.protocol ~service:Conduit_async.TCP.service
+    ~service:Conduit_async.TCP.service
     (Conduit_async.TCP.Listen (None, Async.Tcp.Where_to_listen.of_port port))
     (fun ~body _sock req -> spec req body) in
   Async.Deferred.both (server ())

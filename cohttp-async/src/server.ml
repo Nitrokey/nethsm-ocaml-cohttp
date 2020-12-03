@@ -159,17 +159,15 @@ let create_raw
       ?timeout:int ->
       ?backlog:int ->
       on_handler_error:[ `Call of Conduit_async.flow -> exn  -> unit | `Ignore | `Raise ] ->
-      protocol:(_, flow) Conduit_async.protocol ->
-      service:(cfg, t, flow) Conduit_async.Service.service ->
+      service:(cfg, t, flow) Conduit_async.Service.t ->
       cfg
       -> (body:Body.t ->
           Conduit_async.flow -> Request.t -> response_action Async_kernel.Deferred.t)
       -> unit Async.Condition.t * (unit -> unit Async.Deferred.t)
      = fun ?timeout ?backlog
-       ~on_handler_error ~protocol ~service
+       ~on_handler_error ~service
        cfg handle_request ->
   let handler flow =
-    let flow = Conduit_async.pack protocol flow in
     let on_handler_error = match on_handler_error with
       | `Ignore -> `Log
       | `Call f -> `Call (f flow)
@@ -189,24 +187,24 @@ let create_raw
        * user. *)
       Conduit_async.TCP.Listen (backlog, where)
     | _ -> cfg in
-  Conduit_async.serve ?timeout ~service ~handler cfg
+  Conduit_async.serve ?timeout service ~handler cfg
 
 let create_expert ?timeout ?backlog
-      ~on_handler_error ~protocol ~service cfg handle_request =
+      ~on_handler_error ~service cfg handle_request =
   create_raw ?timeout ?backlog
-    ~on_handler_error ~protocol ~service cfg
+    ~on_handler_error ~service cfg
     handle_request
 
 let create
       ?timeout ?backlog
       ~on_handler_error
-      ~protocol ~service cfg
+      ~service cfg
       handle_request =
   let handle_request ~body address request =
     handle_request ~body address request >>| fun r -> `Response r
   in
   create_raw ?timeout ?backlog
-    ~on_handler_error ~protocol ~service cfg
+    ~on_handler_error ~service cfg
     handle_request
 
 

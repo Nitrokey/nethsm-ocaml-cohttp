@@ -124,7 +124,6 @@ let start_server docroot port index cert_file key_file verbose =
                                     [Conduit_async_tcp.service] *) in
         Logs.err (fun f -> f "Error from %s" (Socket.Address.to_string addr));
         Logs.err (fun f -> f "%s" @@ Exn.to_string exn)))
-    ~protocol:Conduit_async.TCP.protocol
     ~service:Conduit_async.TCP.service
     (Conduit_async.TCP.Listen (None, Tcp.Where_to_listen.of_port port))
     (handler ~info ~docroot ~index) in

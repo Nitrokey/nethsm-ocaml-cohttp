@@ -18,7 +18,7 @@
 
 module IO = Cohttp_lwt_unix_nossl.IO
 
-type ctx = (Conduit.resolvers[@sexp.opaque]) [@@deriving sexp]
+type ctx = (Conduit_lwt.resolvers[@sexp.opaque]) [@@deriving sexp]
 
 val default_ctx : ctx
 

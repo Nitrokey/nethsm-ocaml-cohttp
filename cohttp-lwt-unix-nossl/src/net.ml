@@ -21,7 +21,7 @@ open Lwt.Infix
 
 module IO = Io
 
-type ctx = (Conduit.resolvers[@sexp.opaque]) [@@deriving sexp]
+type ctx = (Conduit_lwt.resolvers[@sexp.opaque]) [@@deriving sexp]
 
 let default_ctx = Conduit_lwt.empty
 

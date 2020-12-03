@@ -27,9 +27,9 @@ module Net_IO = struct
 
   module IO = HTTP_IO
 
-  type ctx = (Conduit.resolvers[@sexp.opaque]) [@@deriving sexp]
+  type ctx = (Conduit_mirage.resolvers[@sexp.opaque]) [@@deriving sexp]
 
-  let default_ctx = Conduit.empty
+  let default_ctx = Conduit_mirage.empty
 
   let failwith fmt = Fmt.kstrf (fun err -> Lwt.fail (Failure err)) fmt
 

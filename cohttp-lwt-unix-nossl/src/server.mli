@@ -51,5 +51,4 @@ val create :
   ?stop:unit Lwt.t ->
   ?on_exn:(exn -> unit) ->
   'cfg ->
-  (_, 'flow) Conduit_lwt.protocol ->
-  ('cfg, 't, 'flow) Conduit_lwt.Service.service -> t -> (unit -> unit Lwt.t)
+  ('cfg, 't, 'flow) Conduit_lwt.Service.t -> t -> (unit -> unit Lwt.t)

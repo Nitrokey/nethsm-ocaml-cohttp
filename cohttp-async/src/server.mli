@@ -61,8 +61,7 @@ val create_expert :
   on_handler_error:[ `Call of Conduit_async.flow -> exn  -> unit
                    | `Ignore
                    | `Raise ] ->
-  protocol:(_, 'flow) Conduit_async.protocol ->
-  service:('cfg, 't, 'flow) Conduit_async.Service.service ->
+  service:('cfg, 't, 'flow) Conduit_async.Service.t ->
   'cfg
   -> (body:Body.t -> Conduit_async.flow -> Request.t -> response_action Async_kernel.Deferred.t)
   -> unit Async.Condition.t * (unit -> unit Async.Deferred.t)
@@ -75,8 +74,7 @@ val create :
   on_handler_error:[ `Call of Conduit_async.flow -> exn  -> unit
                    | `Ignore
                    | `Raise ] ->
-  protocol:(_, 'flow) Conduit_async.protocol ->
-  service:('cfg, 't, 'flow) Conduit_async.Service.service ->
+  service:('cfg, 't, 'flow) Conduit_async.Service.t ->
   'cfg
   -> (body:Body.t -> Conduit_async.flow -> Request.t -> response Async_kernel.Deferred.t)
   -> unit Async.Condition.t * (unit -> unit Async.Deferred.t)

@@ -33,7 +33,7 @@ module Net = struct
     | Some "httpunix", _ ->
       let host = Uri.host_with_default ~default:"localhost" uri in
       let tcp_cfg = Conduit_async.TCP.Unix (Socket.Address.Unix.create host) in
-      Conduit_async.connect tcp_cfg Conduit_async.TCP.protocol
+      Conduit_async.connect Conduit_async.TCP.protocol tcp_cfg
     | Some "https", Some ctx ->
       lookup uri
       |> Deferred.Or_error.ok_exn
@@ -41,7 +41,7 @@ module Net = struct
       let tcp_cfg =
         let addr = Ipaddr_unix.to_inet_addr addr in
         Conduit_async.TCP.Inet (Socket.Address.Inet.create addr ~port) in
-      Conduit_async.connect (ctx, tcp_cfg) Conduit_async_ssl.TCP.protocol
+      Conduit_async.connect Conduit_async_ssl.TCP.protocol (ctx, tcp_cfg)
     | Some "https", None ->
       lookup uri
       |> Deferred.Or_error.ok_exn
@@ -50,7 +50,7 @@ module Net = struct
         let addr = Ipaddr_unix.to_inet_addr addr in
         Conduit_async.TCP.Inet (Socket.Address.Inet.create addr ~port) in
       let ctx = Conduit_async_ssl.context ~hostname:host () in
-      Conduit_async.connect (ctx, tcp_cfg) Conduit_async_ssl.TCP.protocol
+      Conduit_async.connect Conduit_async_ssl.TCP.protocol (ctx, tcp_cfg)
     | _ ->
       lookup uri
       |> Deferred.Or_error.ok_exn
@@ -58,7 +58,7 @@ module Net = struct
       let tcp_cfg =
         let addr = Ipaddr_unix.to_inet_addr addr in
         Conduit_async.TCP.Inet (Socket.Address.Inet.create addr ~port) in
-      Conduit_async.connect tcp_cfg Conduit_async.TCP.protocol
+      Conduit_async.connect Conduit_async.TCP.protocol tcp_cfg 
 
   let failwith fmt = Stdlib.Format.kasprintf failwith fmt
 

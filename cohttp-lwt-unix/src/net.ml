@@ -21,7 +21,7 @@ open Lwt.Infix
 
 module IO = Cohttp_lwt_unix_nossl.IO
 
-type ctx = (Conduit.resolvers[@sexp.opaque]) [@@deriving sexp]
+type ctx = (Conduit_lwt.resolvers[@sexp.opaque]) [@@deriving sexp]
 
 let authenticator =
   match Ca_certs.authenticator () with
