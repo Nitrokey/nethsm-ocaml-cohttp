@@ -67,7 +67,7 @@ module HTTP (FS : Mirage_kv.RO) (S : Cohttp_lwt.S.Server) = struct
     fn
 
   let start ~http_port ?request_fn fs http =
-    let callback (_, cid) request _body =
+    let callback (_, cid) _ip request _body =
       let uri = Cohttp.Request.uri request in
       let cid = Cohttp.Connection.to_string cid in
       Logs.info (fun f -> f "[%s] serving %s" cid (Uri.to_string uri));

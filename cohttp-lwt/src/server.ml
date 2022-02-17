@@ -17,7 +17,7 @@ module Make (IO : S.IO) = struct
     | `Response of Cohttp.Response.t * Body.t ]
 
   type t = {
-    callback : conn -> Cohttp.Request.t -> Body.t -> response_action Lwt.t;
+    callback : conn -> Ipaddr.t -> Cohttp.Request.t -> Body.t -> response_action Lwt.t;
     conn_closed : conn -> unit;
   }
 
@@ -25,14 +25,14 @@ module Make (IO : S.IO) = struct
     { conn_closed; callback }
 
   let make ?conn_closed ~callback () =
-    let callback conn req body =
-      callback conn req body >|= fun rsp -> `Response rsp
+    let callback conn ip req body =
+      callback conn ip req body >|= fun rsp -> `Response rsp
     in
     make_response_action ?conn_closed ~callback ()
 
   let make_expert ?conn_closed ~callback () =
-    let callback conn req body =
-      callback conn req body >|= fun rsp -> `Expert rsp
+    let callback conn ip req body =
+      callback conn ip req body >|= fun rsp -> `Expert rsp
     in
     make_response_action ?conn_closed ~callback ()
 
@@ -95,12 +95,12 @@ module Make (IO : S.IO) = struct
         Body.of_stream body_stream
     | `No | `Unknown -> `Empty
 
-  let handle_request callback conn req body =
+  let handle_request callback conn ip req body =
     Log.debug (fun m -> m "Handle request: %a." Request.pp_hum req);
     Lwt.finalize
       (fun () ->
         Lwt.catch
-          (fun () -> callback conn req body)
+          (fun () -> callback conn ip req body)
           (function
             | Out_of_memory -> Lwt.fail Out_of_memory
             | exn ->
@@ -111,7 +111,7 @@ module Make (IO : S.IO) = struct
                 `Response rsp))
       (fun () -> Body.drain_body body)
 
-  let rec handle_client ic oc conn callback =
+  let rec handle_client ic oc conn ip callback =
     Request.read ic >>= function
     | `Eof -> Lwt.return_unit
     | `Invalid data ->
@@ -119,25 +119,25 @@ module Make (IO : S.IO) = struct
         Lwt.return_unit
     | `Ok req -> (
         let body = read_body ic req in
-        handle_request callback conn req body >>= function
+        handle_request callback conn ip req body >>= function
         | `Response (res, body) ->
             let flush = Response.flush res in
             Response.write ~flush
               (fun writer -> Body.write_body (Response.write_body writer) body)
               res oc
             >>= fun () ->
-            if Request.is_keep_alive req then handle_client ic oc conn callback
+            if Request.is_keep_alive req then handle_client ic oc conn ip callback
             else Lwt.return_unit
         | `Expert (res, io_handler) ->
             Response.write_header res oc >>= fun () ->
-            io_handler ic oc >>= fun () -> handle_client ic oc conn callback)
+            io_handler ic oc >>= fun () -> handle_client ic oc conn ip callback)
 
-  let callback spec io_id ic oc =
+  let callback spec ip io_id ic oc =
     let conn_id = Cohttp.Connection.create () in
     let conn_closed () = spec.conn_closed (io_id, conn_id) in
     Lwt.finalize
       (fun () ->
-        IO.catch (fun () -> handle_client ic oc (io_id, conn_id) spec.callback)
+        IO.catch (fun () -> handle_client ic oc (io_id, conn_id) ip spec.callback)
         >>= function
         | Ok () -> Lwt.return_unit
         | Error e ->

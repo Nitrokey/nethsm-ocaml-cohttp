@@ -3,7 +3,7 @@ open Lwt.Infix
 module type S = sig
   include Cohttp_lwt.S.Server
 
-  val callback : t -> IO.conn -> unit Lwt.t
+  val callback : t -> Ipaddr.t -> IO.conn -> unit Lwt.t
 end
 
 module Flow (F : Mirage_flow.S) = struct
@@ -11,10 +11,10 @@ module Flow (F : Mirage_flow.S) = struct
   module HTTP_IO = Io.Make (Channel)
   include Cohttp_lwt.Make_server (HTTP_IO)
 
-  let callback spec flow =
+  let callback spec ip flow =
     let ch = Channel.create flow in
     Lwt.finalize
-      (fun () -> callback spec flow ch ch)
+      (fun () -> callback spec ip flow ch ch)
       (fun () -> Channel.close ch >|= fun _ -> ())
 end
 

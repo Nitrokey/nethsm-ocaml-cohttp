@@ -155,7 +155,7 @@ module type Server = sig
 
   val make_response_action :
     ?conn_closed:(conn -> unit) ->
-    callback:(conn -> Cohttp.Request.t -> Body.t -> response_action Lwt.t) ->
+    callback:(conn -> Ipaddr.t -> Cohttp.Request.t -> Body.t -> response_action Lwt.t) ->
     unit ->
     t
 
@@ -163,6 +163,7 @@ module type Server = sig
     ?conn_closed:(conn -> unit) ->
     callback:
       (conn ->
+      Ipaddr.t ->
       Cohttp.Request.t ->
       Body.t ->
       (Cohttp.Response.t * (IO.ic -> IO.oc -> unit Lwt.t)) Lwt.t) ->
@@ -172,7 +173,7 @@ module type Server = sig
   val make :
     ?conn_closed:(conn -> unit) ->
     callback:
-      (conn -> Cohttp.Request.t -> Body.t -> (Cohttp.Response.t * Body.t) Lwt.t) ->
+      (conn -> Ipaddr.t -> Cohttp.Request.t -> Body.t -> (Cohttp.Response.t * Body.t) Lwt.t) ->
     unit ->
     t
 
@@ -227,5 +228,5 @@ module type Server = sig
   val respond_not_found :
     ?uri:Uri.t -> unit -> (Cohttp.Response.t * Body.t) Lwt.t
 
-  val callback : t -> IO.conn -> IO.ic -> IO.oc -> unit Lwt.t
+  val callback : t -> Ipaddr.t -> IO.conn -> IO.ic -> IO.oc -> unit Lwt.t
 end

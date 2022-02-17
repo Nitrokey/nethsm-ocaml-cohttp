@@ -5,9 +5,9 @@ module Server (Flow : Mirage_flow.S) = struct
   module HTTP_IO = Io.Make (Channel)
   include Cohttp_lwt.Make_server (HTTP_IO)
 
-  let listen spec flow =
+  let listen spec ip flow =
     let ch = Channel.create flow in
     Lwt.finalize
-      (fun () -> callback spec flow ch ch)
+      (fun () -> callback spec ip flow ch ch)
       (fun () -> Channel.close ch >|= fun _ -> ())
 end
