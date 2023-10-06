@@ -126,7 +126,7 @@ module Make (IO : S.IO) = struct
               (fun writer -> Body.write_body (Response.write_body writer) body)
               res oc
             >>= fun () ->
-            if Request.is_keep_alive req then handle_client ic oc conn ip callback
+            if Request.is_keep_alive req then IO.flush oc >>= fun () -> handle_client ic oc conn ip callback
             else Lwt.return_unit
         | `Expert (res, io_handler) ->
             Response.write_header res oc >>= fun () ->
